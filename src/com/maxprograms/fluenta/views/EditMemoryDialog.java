@@ -43,6 +43,7 @@ import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
 import com.maxprograms.utils.Locator;
 import com.maxprograms.utils.TextUtils;
+import com.maxprograms.utils.PreferencesUtil;
 
 public class EditMemoryDialog  extends Dialog {
 
@@ -87,7 +88,7 @@ public class EditMemoryDialog  extends Dialog {
 		sourceLanguages.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		try {
 			sourceLanguages.setItems(LanguageUtils.getLanguageNames());
-			sourceLanguages.select(TextUtils.geIndex(sourceLanguages.getItems(), LanguageUtils.getLanguage(ProjectPreferences.getDefaultSource().getCode()).getDescription()));
+			sourceLanguages.select(TextUtils.geIndex(sourceLanguages.getItems(), LanguageUtils.getLanguage(PreferencesUtil.getDefaultSource().getCode()).getDescription()));
 		} catch (SAXException | IOException | ParserConfigurationException e) {
 			e.printStackTrace();
 			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR|SWT.OK);
