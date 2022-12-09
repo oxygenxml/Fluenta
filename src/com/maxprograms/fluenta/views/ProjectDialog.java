@@ -57,6 +57,7 @@ import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
 import com.maxprograms.utils.Locator;
 import com.maxprograms.utils.TextUtils;
+import com.maxprograms.utils.PreferencesUtil;
 
 public class ProjectDialog extends Dialog {
 
@@ -175,7 +176,7 @@ public class ProjectDialog extends Dialog {
 		} else {
 			try {
 				sourceLanguages.select(TextUtils.geIndex(sourceLanguages.getItems(),
-						LanguageUtils.getLanguage(ProjectPreferences.getDefaultSource().getCode()).getDescription()));
+						LanguageUtils.getLanguage(PreferencesUtil.getDefaultSource().getCode()).getDescription()));
 			} catch (IOException e) {
 				e.printStackTrace();
 				MessageBox box = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
@@ -224,7 +225,7 @@ public class ProjectDialog extends Dialog {
 
 		} else {
 			try {
-				List<Language> defaultTargets = ProjectPreferences.getDefaultTargets();
+				List<Language> defaultTargets = PreferencesUtil.getDefaultTargets();
 				Iterator<Language> it = defaultTargets.iterator();
 				while (it.hasNext()) {
 					Language l = it.next();

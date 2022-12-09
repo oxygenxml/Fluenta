@@ -72,8 +72,6 @@ import com.maxprograms.fluenta.Fluenta;
 import com.maxprograms.fluenta.models.Memory;
 import com.maxprograms.fluenta.models.Project;
 import com.maxprograms.fluenta.models.ProjectEvent;
-import com.maxprograms.fluenta.views.ProjectPreferences;
-import com.maxprograms.fluenta.views.XmlPreferences;
 import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
 import com.maxprograms.stats.RepetitionAnalysis;
@@ -84,6 +82,7 @@ import com.maxprograms.tmengine.Tuv;
 import com.maxprograms.utils.FileUtils;
 import com.maxprograms.utils.MemUtils;
 import com.maxprograms.utils.Preferences;
+import com.maxprograms.utils.PreferencesUtil;
 import com.maxprograms.utils.TMUtils;
 import com.maxprograms.utils.TMXExporter;
 import com.maxprograms.widgets.AsyncLogger;
@@ -292,8 +291,8 @@ public class LocalController {
 			params.put("srcEncoding", EncodingResolver.getEncoding(project.getMap(), FileFormats.DITA).name()); 
 			params.put("paragraph", "no");  
 			params.put("format", FileFormats.DITA); 
-			params.put("srxFile", ProjectPreferences.getDefaultSRX()); 
-			params.put("translateComments", XmlPreferences.getTranslateComments() ? "yes" : "no");   
+			params.put("srxFile", PreferencesUtil.getDefaultSRX()); 
+			params.put("translateComments", PreferencesUtil.getTranslateComments() ? "yes" : "no");   
 			logger.setStage(Messages.getString("LocalController.35")); 
 
 			DitaMap2Xliff.setDataLogger(logger);

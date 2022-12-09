@@ -14,18 +14,10 @@ package com.maxprograms.fluenta.views;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeSet;
-import java.util.Vector;
 
 import javax.xml.parsers.ParserConfigurationException;
-
-import com.maxprograms.languages.Language;
-import com.maxprograms.languages.LanguageUtils;
-import com.maxprograms.utils.Preferences;
-import com.maxprograms.utils.TextUtils;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -48,6 +40,12 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
+
+import com.maxprograms.languages.Language;
+import com.maxprograms.languages.LanguageUtils;
+import com.maxprograms.utils.Preferences;
+import com.maxprograms.utils.TextUtils;
+import com.maxprograms.utils.PreferencesUtil;
 
 public class ProjectPreferences extends Composite {
 
@@ -82,7 +80,7 @@ public class ProjectPreferences extends Composite {
 		}
 
 		try {
-			defaultSource = getDefaultSource();
+			defaultSource = PreferencesUtil.getDefaultSource();
 			if (defaultSource != null) {
 				sourceLangCombo.select(TextUtils.geIndex(sourceLangCombo.getItems(),
 						LanguageUtils.getLanguage(defaultSource.getCode()).getDescription()));
@@ -121,7 +119,7 @@ public class ProjectPreferences extends Composite {
 		});
 
 		try {
-			defaultTargets = getDefaultTargets();
+			defaultTargets = PreferencesUtil.getDefaultTargets();
 			for (int i = 0; i < defaultTargets.size(); i++) {
 				Language l = defaultTargets.get(i);
 				TableItem item = new TableItem(langsTable, SWT.NONE);
@@ -221,7 +219,7 @@ public class ProjectPreferences extends Composite {
 		srxText = new Text(srxComposite, SWT.BORDER);
 		srxText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		try {
-			srxText.setText(getDefaultSRX());
+			srxText.setText(PreferencesUtil.getDefaultSRX());
 		} catch (IOException e) {
 			e.printStackTrace();
 			MessageBox box = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
@@ -319,44 +317,5 @@ public class ProjectPreferences extends Composite {
 		save.setFocus();
 	}
 
-	public static String getDefaultSRX() throws IOException {
-		Preferences prefs = Preferences.getInstance();
-		File srxFolder = new File(Preferences.getPreferencesDir(), "srx"); 
-		File defaultSrx = new File(srxFolder, "default.srx"); 
-		return prefs.get("DefaultSRX", "srx", defaultSrx.getAbsolutePath());  
-	}
-
-	public static Language getDefaultSource() throws IOException {
-		Preferences prefs = Preferences.getInstance();
-		return LanguageUtils.getLanguage(prefs.get("DefaultSourceLanguages", "default", "en-US"));   
-	}
-
-	public static List<Language> getDefaultTargets() throws IOException {
-		TreeSet<Language> tree = new TreeSet<>(new Comparator<Language>() {
-
-			@Override
-			public int compare(Language o1, Language o2) {
-				return o1.getDescription().compareTo(o2.getDescription());
-			}
-
-		});
-		Preferences prefs = Preferences.getInstance();
-		JSONObject table = prefs.get("DefaultTargetLanguages"); 
-		Iterator<String> keys = table.keys();
-		while (keys.hasNext()) {
-			String key = keys.next();
-			tree.add(new Language(key, table.getString(key)));
-		}
-		if (tree.isEmpty()) {
-			tree.add(LanguageUtils.getLanguage("fr")); 
-			tree.add(LanguageUtils.getLanguage("de")); 
-			tree.add(LanguageUtils.getLanguage("it")); 
-			tree.add(LanguageUtils.getLanguage("es")); 
-			tree.add(LanguageUtils.getLanguage("ja-JP")); 
-		}
-		List<Language> result = new Vector<>();
-		result.addAll(tree);
-		return result;
-	}
 
 }
