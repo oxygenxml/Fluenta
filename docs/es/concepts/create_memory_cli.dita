@@ -29,14 +29,18 @@
       </tgroup>
     </table>
     <p>Ejemplo:</p>
-    <codeblock translate="no" xml:space="preserve">fluenta_cli.cmd -addMem addMemory.json   </codeblock>
-    <p>Donde el contenido de <filepath>addMemory.json</filepath> debe ser similar a:</p>
-    <codeblock outputclass="language-json" translate="no" xml:space="preserve">{
-    "id": 12345678,
-    "title": "JSON test",
-    "description": "memory created using JSON and CLI",
-    "srcLang": "en-US"
-}</codeblock>
+    <codeblock translate="no" xml:space="preserve">
+fluenta_cli.bat -addMem addMemory.json 
+  </codeblock>
+    <p>Donde el contenido de <cmdname>addMemory.json</cmdname> debe ser similar a:</p>
+    <codeblock translate="no" xml:space="preserve">
+{ id:12345678, 
+  title:"JSON test", 
+  description:"memory created using JSON and CLI", 
+  srcLang:"en-US", 
+  tgtLang:["es","fr"]
+}
+</codeblock>
     <section>
       <title>Pares de Valores JSON</title>
       <table>
@@ -76,6 +80,12 @@
               <entry translate="no">srcLang</entry>
               <entry>Texto</entry>
               <entry>Código del idioma origen.</entry>
+              <entry>Si</entry>
+            </row>
+            <row>
+              <entry translate="no">tgtLang</entry>
+              <entry>Arreglo de Texto</entry>
+              <entry>Un arreglo que contiene los códigos de idiomas destino para la memoria.</entry>
               <entry>Si</entry>
             </row>
           </tbody>

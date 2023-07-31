@@ -13,6 +13,10 @@
 package com.maxprograms.fluenta.views;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.text.MessageFormat;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.Vector;
 
@@ -36,6 +40,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.json.JSONException;
 import org.xml.sax.SAXException;
 
 import com.maxprograms.fluenta.Fluenta;
@@ -45,26 +50,27 @@ import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
 import com.maxprograms.utils.Locator;
 import com.maxprograms.utils.TextUtils;
-import com.maxprograms.utils.PreferencesUtil;
 
 public class AddMemoryDialog extends Dialog {
+
+	Logger logger = System.getLogger(AddMemoryDialog.class.getName());
 
 	protected Shell shell;
 	private Display display;
 	protected Combo sourceLanguages;
 	protected Text descText;
 
-	public AddMemoryDialog(Shell parent, int style) {
+	public AddMemoryDialog(Shell parent, int style, MainView mainView) {
 		super(parent, style);
 		shell = new Shell(parent, style);
 		shell.setImage(Fluenta.getResourceManager().getIcon());
-		shell.setText(Messages.getString("AddMemoryDialog.0")); 
+		shell.setText(Messages.getString("AddMemoryDialog.0"));
 		shell.setLayout(new GridLayout());
 		shell.addListener(SWT.Close, new Listener() {
 
 			@Override
 			public void handleEvent(Event arg0) {
-				Locator.remember(shell, "AddMemoryDialog"); 
+				Locator.remember(shell, "AddMemoryDialog");
 			}
 		});
 		display = shell.getDisplay();
@@ -74,7 +80,7 @@ public class AddMemoryDialog extends Dialog {
 		top.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		Label descLabel = new Label(top, SWT.NONE);
-		descLabel.setText(Messages.getString("AddMemoryDialog.2")); 
+		descLabel.setText(Messages.getString("AddMemoryDialog.1"));
 
 		descText = new Text(top, SWT.BORDER);
 		GridData textData = new GridData(GridData.FILL_HORIZONTAL);
@@ -82,24 +88,24 @@ public class AddMemoryDialog extends Dialog {
 		descText.setLayoutData(textData);
 
 		Label sourceLabel = new Label(top, SWT.NONE);
-		sourceLabel.setText(Messages.getString("AddMemoryDialog.3")); 
+		sourceLabel.setText(Messages.getString("AddMemoryDialog.2"));
 
 		sourceLanguages = new Combo(top, SWT.READ_ONLY | SWT.DROP_DOWN);
 		sourceLanguages.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		try {
 			sourceLanguages.setItems(LanguageUtils.getLanguageNames());
 			sourceLanguages.select(TextUtils.geIndex(sourceLanguages.getItems(),
-					LanguageUtils.getLanguage(PreferencesUtil.getDefaultSource().getCode()).getDescription()));
+					LanguageUtils.getLanguage(GeneralPreferences.getDefaultSource().getCode()).getDescription()));
 		} catch (SAXException | IOException | ParserConfigurationException e) {
-			e.printStackTrace();
+			logger.log(Level.ERROR, e);
 			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
-			box.setMessage(Messages.getString("AddMemoryDialog.4")); 
+			box.setMessage(Messages.getString("AddMemoryDialog.3"));
 			box.open();
 			shell.close();
 		}
 
 		Group descriptionGroup = new Group(shell, SWT.NONE);
-		descriptionGroup.setText(Messages.getString("AddMemoryDialog.5")); 
+		descriptionGroup.setText(Messages.getString("AddMemoryDialog.4"));
 		GridLayout groupLayout = new GridLayout();
 		groupLayout.marginWidth = 0;
 		groupLayout.marginHeight = 0;
@@ -116,24 +122,24 @@ public class AddMemoryDialog extends Dialog {
 		bottom.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		Label filler = new Label(bottom, SWT.NONE);
-		filler.setText(""); 
+		filler.setText("");
 		filler.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		Button create = new Button(bottom, SWT.PUSH);
-		create.setText(Messages.getString("AddMemoryDialog.7")); 
+		create.setText(Messages.getString("AddMemoryDialog.5"));
 		create.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				if (descText.getText() == null || descText.getText().isEmpty()) { 
+				if (descText.getText() == null || descText.getText().isEmpty()) {
 					MessageBox box = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
-					box.setMessage(Messages.getString("AddMemoryDialog.9")); 
+					box.setMessage(Messages.getString("AddMemoryDialog.6"));
 					box.open();
 					return;
 				}
-				if (sourceLanguages.getText() == null || sourceLanguages.getText().isEmpty()) { 
+				if (sourceLanguages.getText() == null || sourceLanguages.getText().isEmpty()) {
 					MessageBox box = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
-					box.setMessage(Messages.getString("AddMemoryDialog.11")); 
+					box.setMessage(Messages.getString("AddMemoryDialog.7"));
 					box.open();
 					return;
 				}
@@ -141,25 +147,25 @@ public class AddMemoryDialog extends Dialog {
 				try {
 					srcLang = LanguageUtils.languageFromName(sourceLanguages.getText());
 				} catch (IOException | SAXException | ParserConfigurationException e) {
-					e.printStackTrace();
+					logger.log(Level.ERROR, e);
 					MessageBox box = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
-					box.setMessage(Messages.getString("AddMemoryDialog.12")); 
+					box.setMessage(Messages.getString("AddMemoryDialog.8"));
 					box.open();
 					return;
 				}
 				long id = System.currentTimeMillis();
-				Date now = new Date();
 				Memory mem = new Memory(id, descText.getText(), descriptionText.getText(),
-						System.getProperty("user.name"), now, null, srcLang, new Vector<>()); 
+						System.getProperty("user.name"), new Date(), new Date(), srcLang, new Vector<>());
 				try {
-					MainView.getController().createMemory(mem);
-				} catch (IOException e) {
-					e.printStackTrace();
+					mainView.getController().createMemory(mem);
+				} catch (IOException | JSONException | ParseException e) {
+					logger.log(Level.ERROR, e);
 					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
-					box.setMessage(Messages.getString("AddMemoryDialog.14")); 
+					MessageFormat mf = new MessageFormat(Messages.getString("AddMemoryDialog.9"));
+					box.setMessage(mf.format(new String[] { e.getMessage() }));
 					box.open();
 				}
-				MainView.getMemoriesView().loadMemories();
+				mainView.getMemoriesView().loadMemories();
 				shell.close();
 			}
 		});
@@ -168,7 +174,7 @@ public class AddMemoryDialog extends Dialog {
 	}
 
 	public void show() {
-		Locator.setLocation(shell, "AddMemoryDialog"); 
+		Locator.setLocation(shell, "AddMemoryDialog");
 		shell.open();
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {

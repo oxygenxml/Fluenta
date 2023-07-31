@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2025 Maxprograms.
+ * Copyright (c) 2023 Maxprograms.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 1.0
@@ -30,7 +30,7 @@ import org.xml.sax.SAXException;
 
 import com.maxprograms.utils.Preferences;
 import com.maxprograms.xml.Attribute;
-import com.maxprograms.xml.CatalogBuilder;
+import com.maxprograms.xml.Catalog;
 import com.maxprograms.xml.Document;
 import com.maxprograms.xml.Element;
 import com.maxprograms.xml.SAXBuilder;
@@ -76,8 +76,7 @@ public class TagErrorsReport {
 		writeStr("<html>\n");
 		writeStr("  <head>\n");
 		writeStr("    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n");
-		writeStr("    <title>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.0")
-				+ "</title>\n");
+		writeStr("    <title>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.0") + "</title>\n");
 		writeStr("    <style type=\"text/css\">\n");
 
 		writeStr(readCss());
@@ -89,12 +88,9 @@ public class TagErrorsReport {
 		writeStr("    <table class='analysis'>\n");
 		writeStr("      <tr>\n");
 		writeStr("        <th>#</th>\n");
-		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.1")
-				+ "</th>\n");
-		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.2")
-				+ "</th>\n");
-		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.3")
-				+ "</th>\n");
+		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.1") + "</th>\n");
+		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.2") + "</th>\n");
+		writeStr("        <th>" + com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.3") + "</th>\n");
 		writeStr("      </tr>\n");
 
 		int size = segments.size();
@@ -114,11 +110,9 @@ public class TagErrorsReport {
 				int tLength = trglist.size();
 				int j;
 				if (tLength > srclist.size()) {
-					writeSegment(i + 1, source, target,
-							com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.4"));
+					writeSegment(i + 1, source, target, com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.4"));
 				} else if (tLength < srclist.size()) {
-					writeSegment(i + 1, source, target,
-							com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.5"));
+					writeSegment(i + 1, source, target, com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.5"));
 				} else {
 					for (j = 0; j < srclist.size(); j++) {
 						String es = srclist.get(j);
@@ -132,8 +126,7 @@ public class TagErrorsReport {
 							}
 						}
 						if (!paired) {
-							writeSegment(i + 1, source, target,
-									com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.6"));
+							writeSegment(i + 1, source, target, com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.6"));
 						}
 					}
 					trglist = buildTagList(target);
@@ -141,16 +134,14 @@ public class TagErrorsReport {
 						String es = srclist.get(j);
 						String et = trglist.get(j);
 						if (!es.equals(et)) {
-							writeSegment(i + 1, source, target,
-									com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.7"));
+							writeSegment(i + 1, source, target, com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.7"));
 						}
 					}
 				}
 			} else {
 				// all tags are missing
 				if (!srclist.isEmpty()) {
-					writeSegment(i + 1, source, target,
-							com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.5"));
+					writeSegment(i + 1, source, target, com.maxprograms.fluenta.controllers.Messages.getString("TagErrorsReport.5"));
 				}
 			}
 		}
@@ -309,7 +300,7 @@ public class TagErrorsReport {
 	private static Document loadXliff(String fileName)
 			throws SAXException, IOException, ParserConfigurationException, URISyntaxException {
 		SAXBuilder builder = new SAXBuilder();
-		builder.setEntityResolver(CatalogBuilder.getCatalog(Preferences.getInstance().getCatalogFile()));
+		builder.setEntityResolver(new Catalog(Preferences.getInstance().getCatalogFile()));
 		Document doc = builder.build(fileName);
 		Element root = doc.getRootElement();
 		if (!root.getName().equals("xliff")) {

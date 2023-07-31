@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2025 Maxprograms.
+ * Copyright (c) 2023 Maxprograms.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 1.0
@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -43,7 +44,6 @@ import com.maxprograms.converters.FileFormats;
 import com.maxprograms.converters.ILogger;
 import com.maxprograms.converters.Merge;
 import com.maxprograms.converters.TmxExporter;
-import com.maxprograms.converters.Utils;
 import com.maxprograms.converters.ditamap.DitaMap2Xliff;
 import com.maxprograms.converters.ditamap.Xliff2DitaMap;
 import com.maxprograms.fluenta.models.Memory;
@@ -52,15 +52,16 @@ import com.maxprograms.fluenta.models.ProjectEvent;
 import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
 import com.maxprograms.stats.RepetitionAnalysis;
-import com.maxprograms.swordfish.tm.ITmEngine;
+import com.maxprograms.swordfish.tm.InternalDatabase;
 import com.maxprograms.swordfish.tm.Match;
 import com.maxprograms.swordfish.tm.MatchQuality;
-import com.maxprograms.swordfish.tm.SqliteDatabase;
+import com.maxprograms.swordfish.tm.TMUtils;
 import com.maxprograms.utils.Preferences;
+import com.maxprograms.widgets.AsyncLogger;
 import com.maxprograms.xliff2.FromXliff2;
 import com.maxprograms.xliff2.ToXliff2;
 import com.maxprograms.xml.Attribute;
-import com.maxprograms.xml.CatalogBuilder;
+import com.maxprograms.xml.Catalog;
 import com.maxprograms.xml.Document;
 import com.maxprograms.xml.Element;
 import com.maxprograms.xml.Indenter;
@@ -76,74 +77,6 @@ public class LocalController {
 	private ProjectsManager projectsManager;
 	private MemoriesManager memoriesManager;
 	private static double penalty = 1;
-
-	public LocalController() throws IOException {
-		// check catalog
-		Preferences preferences = Preferences.getInstance();
-		File catalog = new File(preferences.getCatalogFile());
-		if (!catalog.exists()) {
-			File catalogFolder = catalog.getParentFile();
-			if (!catalogFolder.exists()) {
-				Files.createDirectories(catalogFolder.toPath());
-			}
-			File appFolder = new File(System.getProperty("user.dir"));
-			File appCatalogFolder = new File(appFolder, "catalog");
-			if (!appCatalogFolder.exists()) {
-				throw new IOException(Messages.getString("LocalController.35"));
-			}
-			File appCatalog = new File(appCatalogFolder, "catalog.xml");
-			if (!appCatalog.exists()) {
-				MessageFormat mf = new MessageFormat(Messages.getString("LocalController.36"));
-				throw new IOException(mf.format(new String[] { appCatalog.getAbsolutePath() }));
-			}
-			Document doc = new Document("urn:oasis:names:tc:entity:xmlns:xml:catalog", "catalog", null, null);
-			Element root = doc.getRootElement();
-			Element nextCatalog = new Element("nextCatalog");
-			nextCatalog.setAttribute("catalog", appCatalog.getAbsolutePath());
-			root.addContent(nextCatalog);
-			Indenter.indent(root, 2);
-			try (FileOutputStream output = new FileOutputStream(catalog)) {
-				XMLOutputter outputter = new XMLOutputter();
-				outputter.preserveSpace(true);
-				outputter.output(doc, output);
-			}
-		}
-		// check filters
-		File filtersFolder = new File(preferences.getFiltersFolder());
-		if (!filtersFolder.exists()) {
-			Files.createDirectories(filtersFolder.toPath());
-			File appFolder = new File(System.getProperty("user.dir"));
-			File appFiltersFolder = new File(appFolder, "xmlfilter");
-			if (!appFiltersFolder.exists()) {
-				throw new IOException(Messages.getString("LocalController.37"));
-			}
-			File[] files = appFiltersFolder.listFiles();
-			for (int i = 0; i < files.length; i++) {
-				File appFiltersFile = files[i];
-				File filtersFile = new File(filtersFolder, appFiltersFile.getName());
-				Files.copy(appFiltersFile.toPath(), filtersFile.toPath());
-			}
-		}
-		// check srx
-		File srx = new File(preferences.getDefaultSRX());
-		if (!srx.exists()) {
-			File appFolder = new File(System.getProperty("user.dir"));
-			File appSrxFolder = new File(appFolder, "srx");
-			if (!appSrxFolder.exists()) {
-				throw new IOException(Messages.getString("LocalController.38"));
-			}
-			File srxFile = new File(appSrxFolder, "default.srx");
-			if (!srxFile.exists()) {
-				MessageFormat mf = new MessageFormat(Messages.getString("LocalController.39"));
-				throw new IOException(mf.format(new String[] { srxFile.getAbsolutePath() }));
-			}
-			File srxFolder = srx.getParentFile();
-			if (!srxFolder.exists()) {
-				Files.createDirectories(srxFolder.toPath());
-			}
-			Files.copy(srxFile.toPath(), srx.toPath());
-		}
-	}
 
 	public List<Project> getProjects() throws IOException, JSONException, ParseException {
 		if (projectsManager == null) {
@@ -165,12 +98,17 @@ public class LocalController {
 			memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
 		}
 		Language sourceLang = LanguageUtils.getLanguage(project.getSrcLanguage());
-		Memory memory = new Memory(project.getId(), project.getTitle(), project.getDescription(),
-				new Date(), new Date(), sourceLang);
+		List<String> langsList = project.getLanguages();
+		List<Language> targetLangs = new Vector<>();
+		for (int i = 0; i < langsList.size(); i++) {
+			targetLangs.add(LanguageUtils.getLanguage(langsList.get(i)));
+		}
+		Memory memory = new Memory(project.getId(), project.getTitle(), project.getDescription(), project.getOwner(),
+				new Date(), new Date(), sourceLang, targetLangs);
 		memoriesManager.add(memory);
 	}
 
-	public void createMemory(Memory memory) throws IOException, JSONException {
+	public void createMemory(Memory memory) throws IOException, JSONException, ParseException {
 		if (memoriesManager == null) {
 			Preferences preferences = Preferences.getInstance();
 			memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
@@ -196,15 +134,14 @@ public class LocalController {
 		projectsManager.update(project);
 	}
 
-	public ITmEngine getTMEngine(long memoryId) throws IOException, SQLException {
+	public InternalDatabase getTMEngine(long memoryId) throws IOException, SQLException {
 		Preferences preferences = Preferences.getInstance();
-		return new SqliteDatabase("" + memoryId, preferences.getMemoriesFolder().getAbsolutePath());
+		return new InternalDatabase("" + memoryId, preferences.getMemoriesFolder().getAbsolutePath());
 	}
 
 	public void generateXliff(Project project, String xliffFolder, List<Language> tgtLangs, boolean useICE,
-			boolean useTM, boolean generateCount, String ditavalFile, String version, boolean embedSkeleton,
-			boolean modifiedFilesOnly, boolean ignoreTrackedChanges, boolean ignoreSVG, boolean paragraphSegmentation,
-			ILogger logger)
+			boolean useTM, boolean generateCount, String ditavalFile, boolean useXliff20, boolean embedSkeleton,
+			boolean modifiedFilesOnly, boolean ignoreTrackedChanges, boolean paragraphSegmentation, ILogger logger)
 			throws IOException, SAXException, ParserConfigurationException, URISyntaxException, SQLException,
 			JSONException, ParseException {
 		Map<String, String> params = new Hashtable<>();
@@ -240,7 +177,6 @@ public class LocalController {
 		params.put("translateComments", translateComments ? "yes" : "no");
 		params.put("xmlfilter", preferences.getFiltersFolder());
 		params.put("ignoretc", ignoreTrackedChanges ? "yes" : "no");
-		params.put("ignoresvg", ignoreSVG ? "yes" : "no");
 		params.put("paragraph", paragraphSegmentation ? "yes" : "no");
 		params.put("embed", embedSkeleton ? "yes" : "no");
 
@@ -295,7 +231,7 @@ public class LocalController {
 				String targetName = getName(map.getName(), tgtLangs.get(i).getCode());
 				File targetXliff = new File(folder, targetName);
 				SAXBuilder builder = new SAXBuilder();
-				builder.setEntityResolver(CatalogBuilder.getCatalog(Preferences.getInstance().getCatalogFile()));
+				builder.setEntityResolver(new Catalog(Preferences.getInstance().getCatalogFile()));
 				Document doc1 = builder.build(targetXliff);
 				Element root1 = doc1.getRootElement();
 				Element firstFile = root1.getChild("file");
@@ -308,7 +244,7 @@ public class LocalController {
 				List<Element> segments = new Vector<>();
 				recurse(root1, segments);
 				List<Long> mems = project.getMemories();
-				List<ITmEngine> dbs = new Vector<>();
+				List<InternalDatabase> dbs = new Vector<>();
 				for (int i2 = 0; i2 < mems.size(); i2++) {
 					dbs.add(getTMEngine(mems.get(i2)));
 				}
@@ -351,7 +287,7 @@ public class LocalController {
 				}
 				logger.log(mf2.format(new String[] { "" + segments.size(), "" + segments.size() }));
 				for (int i2 = 0; i2 < dbs.size(); i2++) {
-					ITmEngine db = dbs.get(i2);
+					InternalDatabase db = dbs.get(i2);
 					db.close();
 				}
 				try (FileOutputStream out = new FileOutputStream(targetXliff)) {
@@ -372,13 +308,13 @@ public class LocalController {
 				analysis.analyse(targetXliff.getAbsolutePath(), Preferences.getInstance().getCatalogFile());
 			}
 		}
-		if (version.startsWith("2.")) {
+		if (useXliff20) {
 			logger.setStage(Messages.getString("LocalController.10"));
 			for (int i = 0; i < tgtLangs.size(); i++) {
 				String targetName = getName(map.getName(), tgtLangs.get(i).getCode());
 				File targetXliff = new File(folder, targetName);
 				logger.log(targetXliff.getAbsolutePath());
-				result = ToXliff2.run(targetXliff, Preferences.getInstance().getCatalogFile(), version);
+				result = ToXliff2.run(targetXliff, Preferences.getInstance().getCatalogFile());
 				if (!result.get(0).equals(Constants.SUCCESS)) {
 					throw new IOException(result.get(1));
 				}
@@ -479,7 +415,7 @@ public class LocalController {
 					continue;
 				}
 				current = segments.get(i).getChild("source");
-				String pureText = Utils.pureText(current);
+				String pureText = TMUtils.pureText(current);
 				if (i + 1 < segments.size()) {
 					next = segments.get(i + 1).getChild("source");
 				} else {
@@ -491,8 +427,8 @@ public class LocalController {
 						continue;
 					}
 					Element newSource = newUnit.getChild("source");
-					if (pureText.equals(Utils.pureText(newSource))) {
-						double mismatches = Utils.wrongTags(current, newSource, 1.0);
+					if (pureText.equals(TMUtils.pureText(newSource))) {
+						double mismatches = wrongTags(current, newSource, 1.0);
 						if (mismatches > 0.0) {
 							continue;
 						}
@@ -501,7 +437,7 @@ public class LocalController {
 								continue;
 							}
 							Element e = leveraged.get(j - 1).getChild("source");
-							if (!Utils.pureText(previous).equals(Utils.pureText(e))) {
+							if (!TMUtils.pureText(previous).equals(TMUtils.pureText(e))) {
 								continue;
 							}
 						}
@@ -510,7 +446,7 @@ public class LocalController {
 								continue;
 							}
 							Element e = leveraged.get(j + 1).getChild("source");
-							if (!Utils.pureText(next).equals(Utils.pureText(e))) {
+							if (!TMUtils.pureText(next).equals(TMUtils.pureText(e))) {
 								continue;
 							}
 						}
@@ -652,10 +588,13 @@ public class LocalController {
 		if (!ignoreTagErrors) {
 			String tagErrors = checkTags(root);
 			if (!tagErrors.isEmpty()) {
-				String message = Messages.getString("LocalController.14") + "\n\n";
+				tagErrors = Messages.getString("LocalController.14") + "\n\n";
 				String report = TagErrorsReport.run(workDocument);
-				MessageFormat mf = new MessageFormat(Messages.getString(message));
-				logger.displayError(mf.format(new String[] { report }));
+				if (logger instanceof AsyncLogger aLogger) {
+					aLogger.displayReport(tagErrors, report);
+				} else {
+					logger.displayError(tagErrors);
+				}
 				return;
 			}
 		}
@@ -720,7 +659,7 @@ public class LocalController {
 			logger.setStage(Messages.getString("LocalController.19"));
 			Memory m = getMemory(project.getId());
 			if (m != null) {
-				ITmEngine database = getTMEngine(m.getId());
+				InternalDatabase database = getTMEngine(m.getId());
 				int result = database.storeTMX(tmxFile, project.getTitle(), "", "");
 				database.close();
 				MessageFormat mf = new MessageFormat(Messages.getString("LocalController.20"));
@@ -764,7 +703,7 @@ public class LocalController {
 	private static String checkXliffVersion(String xliffDocument)
 			throws SAXException, IOException, ParserConfigurationException, URISyntaxException {
 		SAXBuilder builder = new SAXBuilder();
-		builder.setEntityResolver(CatalogBuilder.getCatalog(Preferences.getInstance().getCatalogFile()));
+		builder.setEntityResolver(new Catalog(Preferences.getInstance().getCatalogFile()));
 		Document doc = builder.build(xliffDocument);
 		Element root = doc.getRootElement();
 		if (!root.getName().equals("xliff")) {
@@ -977,7 +916,7 @@ public class LocalController {
 	private static Document loadXliff(String fileName)
 			throws SAXException, IOException, ParserConfigurationException, URISyntaxException {
 		SAXBuilder builder = new SAXBuilder();
-		builder.setEntityResolver(CatalogBuilder.getCatalog(Preferences.getInstance().getCatalogFile()));
+		builder.setEntityResolver(new Catalog(Preferences.getInstance().getCatalogFile()));
 		Document doc = builder.build(fileName);
 		Element root = doc.getRootElement();
 		if (!root.getName().equals("xliff")) {
@@ -1038,8 +977,8 @@ public class LocalController {
 
 	public int importTMX(Memory memory, String tmxFile)
 			throws SQLException, IOException, SAXException, ParserConfigurationException, JSONException,
-			URISyntaxException {
-		ITmEngine database = getTMEngine(memory.getId());
+			ParseException {
+		InternalDatabase database = getTMEngine(memory.getId());
 		int result = database.storeTMX(tmxFile, "", "", "");
 		database.close();
 		memory.setLastUpdate(new Date());
@@ -1047,7 +986,7 @@ public class LocalController {
 		return result;
 	}
 
-	public void updateMemory(Memory memory) throws IOException, JSONException {
+	public void updateMemory(Memory memory) throws IOException, JSONException, ParseException {
 		if (memoriesManager == null) {
 			Preferences preferences = Preferences.getInstance();
 			memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
@@ -1064,9 +1003,9 @@ public class LocalController {
 		return memoriesManager.getMemory(id);
 	}
 
-	private List<Element> searchText(ITmEngine db, Element seg, String sourcelang, String targetlang,
+	private List<Element> searchText(InternalDatabase db, Element seg, String sourcelang, String targetlang,
 			float fuzzyLevel, boolean caseSensitive)
-			throws SAXException, IOException, ParserConfigurationException, SQLException, URISyntaxException {
+			throws SAXException, IOException, ParserConfigurationException, SQLException {
 		if (validCtypes == null) {
 			validCtypes = new Hashtable<>();
 			validCtypes.put("image", "");
@@ -1087,12 +1026,12 @@ public class LocalController {
 		return searchTranslations(db, seg, sourcelang, targetlang, fuzzyLevel, caseSensitive);
 	}
 
-	private List<Element> searchTranslations(ITmEngine database, Element seg, String srcLang, String tgtLang,
+	private List<Element> searchTranslations(InternalDatabase database, Element seg, String srcLang, String tgtLang,
 			float fuzzyLevel, boolean caseSensitive)
-			throws SAXException, IOException, ParserConfigurationException, SQLException, URISyntaxException {
+			throws SAXException, IOException, ParserConfigurationException, SQLException {
 
 		List<Element> result = new Vector<>();
-		List<Match> res = database.searchTranslation(Utils.pureText(seg.getChild("source")),
+		List<Match> res = database.searchTranslation(TMUtils.pureText(seg.getChild("source")),
 				srcLang, tgtLang, (int) fuzzyLevel, caseSensitive);
 
 		Iterator<Match> r = res.iterator();
@@ -1114,9 +1053,9 @@ public class LocalController {
 			alttrans.addContent(tgt);
 			alttrans.addContent("\n   ");
 			alttrans = fixTags(seg.getChild("source"), alttrans);
-			int quality = MatchQuality.similarity(Utils.pureText(seg.getChild("source")),
-					Utils.pureText(alttrans.getChild("source")));
-			double discount = Utils.wrongTags(alttrans.getChild("source"), seg.getChild("source"), penalty);
+			int quality = MatchQuality.similarity(TMUtils.pureText(seg.getChild("source")),
+					TMUtils.pureText(alttrans.getChild("source")));
+			double discount = wrongTags(alttrans.getChild("source"), seg.getChild("source"), penalty);
 			quality = (int) Math.floor(quality - discount);
 
 			alttrans.setAttribute("match-quality", "" + quality);
@@ -1207,6 +1146,50 @@ public class LocalController {
 				cleanCtype((Element) n);
 			}
 		}
+	}
+
+	private static double wrongTags(Element x, Element y, double tagPenalty) {
+		List<Element> tags = new Vector<>();
+		int count = 0;
+		int errors = 0;
+		List<XMLNode> content = x.getContent();
+		Iterator<XMLNode> i = content.iterator();
+		while (i.hasNext()) {
+			XMLNode n = i.next();
+			if (n.getNodeType() == XMLNode.ELEMENT_NODE) {
+				Element e = (Element) n;
+				tags.add(e);
+				count++;
+			}
+		}
+		content = y.getContent();
+		i = content.iterator();
+		int c2 = 0;
+		while (i.hasNext()) {
+			XMLNode n = i.next();
+			if (n.getNodeType() == XMLNode.ELEMENT_NODE) {
+				Element e = (Element) n;
+				c2++;
+				boolean found = false;
+				for (int j = 0; j < count; j++) {
+					if (e.equals(tags.get(j))) {
+						tags.set(j, null);
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					errors++;
+				}
+			}
+		}
+		if (c2 > count) {
+			errors += c2 - count;
+		}
+		if (count > c2) {
+			errors += count - c2;
+		}
+		return errors * tagPenalty;
 	}
 
 	private Element fixTags(Element src, Element match) {
@@ -1354,13 +1337,13 @@ public class LocalController {
 					deltree(list[i]);
 				}
 			}
+
 		}
 		Files.deleteIfExists(file.toPath());
 	}
 
-	public void exportTMX(Memory memory, String file) throws IOException, SQLException, JSONException, SAXException,
-			ParserConfigurationException, URISyntaxException {
-		ITmEngine database = getTMEngine(memory.getId());
+	public void exportTMX(Memory memory, String file) throws IOException, SQLException {
+		InternalDatabase database = getTMEngine(memory.getId());
 		Set<String> languages = database.getAllLanguages();
 		database.exportMemory(file, languages, memory.getSrcLanguage().getCode());
 		database.close();
@@ -1378,10 +1361,15 @@ public class LocalController {
 		if (matches.isEmpty() || matches.size() == 1) {
 			return matches;
 		}
-		Collections.sort(matches, (Element o1, Element o2) -> {
-			Double db1 = Double.parseDouble(o1.getAttributeValue("match-quality", "0"));
-			Double db2 = Double.parseDouble(o2.getAttributeValue("match-quality", "0"));
-			return db1.compareTo(db2);
+		Collections.sort(matches, new Comparator<Element>() {
+
+			@Override
+			public int compare(Element o1, Element o2) {
+				Double db1 = Double.parseDouble(o1.getAttributeValue("match-quality", "0"));
+				Double db2 = Double.parseDouble(o2.getAttributeValue("match-quality", "0"));
+				return db1.compareTo(db2);
+			}
+
 		});
 		return matches;
 	}
