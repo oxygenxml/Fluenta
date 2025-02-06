@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="dist" name="Fluenta">
-    <property name="target" value="21" />
-    <property name="source" value="21" />
+    <property name="target" value="17" />
+    <property name="source" value="17" />
     <property name="build.compiler" value="javac10+" />
     <path id="Fluenta.classpath">
         <pathelement location="jars/bcp47j.jar" />
@@ -65,7 +65,6 @@
         </move>
         <move file="dist\release" todir="." />
         <delete dir="dist" failonerror="true" />
-        <delete file=".\jars\fluenta.jar" />
     </target>
     <target name="copyUnix" unless="isWindows">
         <description>Move java binaries to work folder</description>
@@ -83,7 +82,6 @@
         </move>
         <move file="dist/release" todir="." />
         <delete dir="dist" failonerror="false" />
-        <delete file="jars/fluenta.jar" />
     </target>
     <target name="link" depends="distclean,compile">
         <description>Build Java binaries</description>
