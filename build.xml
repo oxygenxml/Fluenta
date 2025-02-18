@@ -19,6 +19,10 @@
     </condition>
     <target name="init">
         <mkdir dir="out" />
+        <mkdir dir="dist/bin" /> <!-- Ensure dist/bin exists -->
+        <mkdir dir="dist/conf" /> <!-- Ensure dist/conf exists -->
+        <mkdir dir="dist/legal" /> <!-- Ensure dist/legal exists -->
+        <mkdir dir="dist/lib" /> <!-- Ensure dist/lib exists -->
         <copy includeemptydirs="false" todir="out">
             <fileset dir="src">
                 <exclude name="**/*.java" />
@@ -37,7 +41,7 @@
     <target name="compile" depends="clean,init">
         <description>Build jar file</description>
         <delete file="jars/fluenta.jar" failonerror="false" />
-        <javac srcdir="src" destdir="out" classpathref="Fluenta.classpath" modulepathref="Fluenta.classpath" includeAntRuntime="false" />
+        <javac srcdir="src" destdir="out" classpathref="Fluenta.classpath" includeAntRuntime="false" />
         <jar destfile="jars/fluenta.jar" basedir="out" />
     </target>
     <target name="distclean">
@@ -51,19 +55,18 @@
     </target>
     <target name="copyWindows" if="isWindows">
         <description>Move java binaries to work folder</description>
-        <move todir=".\bin">
+        <move todir="dist\bin">
             <fileset dir="dist\bin" />
         </move>
-        <move todir=".\conf">
+        <move todir="dist\conf">
             <fileset dir="dist\conf" />
         </move>
-        <move todir=".\legal">
+        <move todir="dist\legal">
             <fileset dir="dist\legal" />
         </move>
-        <move todir=".\lib">
+        <move todir="dist\lib">
             <fileset dir="dist\lib" />
         </move>
-        <move file="dist\release" todir="." />
         <delete dir="dist" failonerror="true" />
     </target>
     <target name="copyUnix" unless="isWindows">
@@ -80,17 +83,9 @@
         <move todir="./lib">
             <fileset dir="dist/lib" />
         </move>
-        <move file="dist/release" todir="." />
         <delete dir="dist" failonerror="false" />
     </target>
-    <target name="link" depends="distclean,compile">
-        <description>Build Java binaries</description>
-        <link destDir="dist" modulepath="jars:${java.home}/jmods" includeManPages="false" includeHeaders="false" >
-            <module name="fluenta" />
-        </link>
-        <delete file="dist/lib/jrt-fs.jar" />
-    </target>
-    <target name="dist" depends="link,copyWindows,copyUnix">
+    <target name="dist" depends="compile,copyWindows,copyUnix">
         <description>Prepare distribution</description>
     </target>
 </project>
