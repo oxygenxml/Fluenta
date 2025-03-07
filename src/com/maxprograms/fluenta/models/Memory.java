@@ -96,6 +96,14 @@ public class Memory {
 	public void setLastUpdate(Date lastUpdate) {
 		this.lastUpdate = lastUpdate;
 	}
+	
+	public Date getCreationDate() {
+      return creationDate;
+    }
+	
+	public Date getLastUpdate() {
+      return lastUpdate;
+    }
 
 	public Language getSrcLanguage() {
 		return srcLanguage;
