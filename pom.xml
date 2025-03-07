@@ -146,7 +146,6 @@
                             <descriptor>assembly-configuration.xml</descriptor>
                         </descriptors>
                         <finalName>${project.artifactId}-${project.version}-configuration</finalName>
-                        <appendAssemblyId>false</appendAssemblyId>
                     </configuration>
                 </execution>
             </executions>
