@@ -231,4 +231,12 @@ public class Project {
 	public void setLanguageStatus(String langCode, String status) {
 		languageStatus.put(langCode, status);
 	}
+	
+	public void setTitle(String title) {
+	  this.title = title;
+	}
+	
+	public void setTargetLanguages(List<String> tgtLanguages) {
+	  this.tgtLanguages = tgtLanguages;
+	}
 }
