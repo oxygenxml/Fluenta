@@ -20,6 +20,7 @@ import java.util.Date;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.maxprograms.utils.DateFormatterUtil;
 import com.maxprograms.utils.TextUtils;
 
 public class ProjectEvent {
@@ -42,7 +43,7 @@ public class ProjectEvent {
 
 	public ProjectEvent(JSONObject json) throws JSONException, ParseException {
 		this.type = json.getString("type");
-		this.date = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(json.getString("date"));
+		this.date =  DateFormatterUtil.parseDate(json.getString("date"));
 		this.language = json.getString("language");
 		this.build = json.getInt("build");
 	}
