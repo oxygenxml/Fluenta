@@ -25,6 +25,7 @@ import org.xml.sax.SAXException;
 
 import com.maxprograms.languages.Language;
 import com.maxprograms.languages.LanguageUtils;
+import com.maxprograms.utils.DateFormatterUtil;
 
 public class Memory {
 
@@ -51,9 +52,9 @@ public class Memory {
 		this.id = json.getLong("id");
 		this.name = json.getString("name");
 		this.description = json.getString("description");
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-		this.creationDate = df.parse(json.getString("creationDate"));
-		this.lastUpdate = df.parse(json.getString("lastUpdate"));
+		
+		creationDate = DateFormatterUtil.parseDate(json.getString("creationDate"));
+        lastUpdate = DateFormatterUtil.parseDate(json.getString("lastUpdate"));
 		this.srcLanguage = LanguageUtils.getLanguage(json.getString("srcLanguage"));
 	}
 

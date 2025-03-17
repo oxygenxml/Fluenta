@@ -30,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.maxprograms.converters.Utils;
+import com.maxprograms.utils.DateFormatterUtil;
 
 public class Project {
 
@@ -38,7 +39,7 @@ public class Project {
 	public static final String COMPLETED = "2";
 	private static final String UNTRANSLATED = "3";
 	private static final String TRANSLATED = "4";
-
+	
 	private long id;
 	private String title;
 	private String description;
@@ -80,9 +81,10 @@ public class Project {
 		if (!mapFile.isAbsolute()) {
 			map = Utils.getAbsolutePath(System.getProperty("user.home"), map);
 		}
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-		creationDate = df.parse(json.getString("creationDate"));
-		lastUpdate = df.parse(json.getString("lastUpdate"));
+		
+		creationDate = DateFormatterUtil.parseDate(json.getString("creationDate"));
+		lastUpdate = DateFormatterUtil.parseDate(json.getString("lastUpdate"));
+		
 		srcLanguage = json.getString("srcLanguage");
 		tgtLanguages = new Vector<>();
 		JSONArray tgtLangs = json.getJSONArray("tgtLanguages");
