@@ -153,6 +153,36 @@ public class LocalController {
 		project.setLastUpdate(new Date());
 		projectsManager.update(project);
 	}
+	
+	public void createProject(Project project) throws JSONException, IOException, ParseException {
+      if (projectsManager == null) {
+          Preferences preferences = Preferences.getInstance();
+          projectsManager = new ProjectsManager(preferences.getProjectsFolder());
+      }
+      project.setLastUpdate(new Date());
+      projectsManager.add(project);
+   }
+	
+	public void removeProject(long projectId) throws JSONException, IOException, ParseException {
+      if (projectsManager == null) {
+          Preferences preferences = Preferences.getInstance();
+          projectsManager = new ProjectsManager(preferences.getProjectsFolder());
+      }
+    
+      projectsManager.remove(projectId);
+   }
+	
+	
+	
+	public List<Project> getProjects() throws JSONException, IOException, ParseException {
+      if (projectsManager == null) {
+          Preferences preferences = Preferences.getInstance();
+          projectsManager = new ProjectsManager(preferences.getProjectsFolder());
+      }
+     
+      return projectsManager.getProjects();
+   }
+	
 
 	public ITmEngine getTMEngine(long memoryId) throws IOException, SQLException {
 		Preferences preferences = Preferences.getInstance();
@@ -1012,7 +1042,24 @@ public class LocalController {
 		}
 		memoriesManager.update(memory);
 	}
+	
+	public void createMemory(Memory memory) throws IOException, JSONException {
+      if (memoriesManager == null) {
+          Preferences preferences = Preferences.getInstance();
+          memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
+      }
+      memoriesManager.add(memory);
+   }
 
+	public void removeMemory(long id)
+        throws IOException, JSONException, ParseException, SAXException, ParserConfigurationException {
+    if (memoriesManager == null) {
+        Preferences preferences = Preferences.getInstance();
+        memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
+    }
+    memoriesManager.remove(id);
+}
+	
 	public Memory getMemory(long id)
 			throws IOException, JSONException, ParseException, SAXException, ParserConfigurationException {
 		if (memoriesManager == null) {
@@ -1021,6 +1068,15 @@ public class LocalController {
 		}
 		return memoriesManager.getMemory(id);
 	}
+	
+	public List<Memory> getMemories() throws JSONException, IOException, ParseException, SAXException, ParserConfigurationException {
+	  if (memoriesManager == null) {
+        Preferences preferences = Preferences.getInstance();
+        memoriesManager = new MemoriesManager(preferences.getMemoriesFolder());
+    }
+     
+      return memoriesManager.getMemories();
+   }
 
 	private List<Element> searchText(ITmEngine db, Element seg, String sourcelang, String targetlang,
 			float fuzzyLevel, boolean caseSensitive)
