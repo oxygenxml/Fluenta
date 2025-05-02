@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Vector;
 
@@ -376,7 +377,10 @@ public class LocalController {
 		List<String> issues = DitaMap2Xliff.getIssues();
 		Iterator<String> it = issues.iterator();
 		while (it.hasNext()) {
-			logger.logError(it.next());
+		  String message = it.next();
+		  if(!Optional.ofNullable(message).orElse("").contains("Cancelled")) {
+		    logger.logError(message);
+		  }
 		}
 	}
 
