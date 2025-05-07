@@ -162,21 +162,23 @@ public class TagErrorsReport {
 	}
 
 	private static String readCss() throws IOException {
-		StringBuilder sb = new StringBuilder();
-		try (InputStream is = TagErrorsReport.class.getResourceAsStream("tagErrors.css")) {
-			try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-				try (BufferedReader buffered = new BufferedReader(reader)) {
-					String line = "";
-					while ((line = buffered.readLine()) != null) {
-						if (!sb.isEmpty()) {
-							sb.append('\n');
-						}
-						sb.append(line);
-					}
-				}
-			}
-		}
-		return sb.toString();
+	  StringBuilder sb = new StringBuilder();
+	  try (InputStream is = TagErrorsReport.class.getResourceAsStream("tagerrors.css")) {
+	    if(is != null) {
+	      try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+	        try (BufferedReader buffered = new BufferedReader(reader)) {
+	          String line = "";
+	          while ((line = buffered.readLine()) != null) {
+	            if (!sb.isEmpty()) {
+	              sb.append('\n');
+	            }
+	            sb.append(line);
+	          }
+	        }
+	      }
+	    }
+	  }
+	  return sb.toString();
 	}
 
 	private static void writeSegment(int id, Element source, Element target, String description) throws IOException {

@@ -641,13 +641,13 @@ public class LocalController {
 		if (acceptUnapproved) {
 			approveAll(root);
 		}
-		if (!ignoreTagErrors) {
+		if (!ignoreTagErrors) { 
 			String tagErrors = checkTags(root);
 			if (!tagErrors.isEmpty()) {
-				String message = Messages.getString("LocalController.14") + "\n\n";
+				String message = Messages.getString("LocalController.14");
 				String report = TagErrorsReport.run(workDocument);
 				MessageFormat mf = new MessageFormat(Messages.getString(message));
-				logger.displayError(mf.format(new String[] { report }));
+				logger.displayError(mf.format(new String[] { report }).replace("!", ""));
 				return;
 			}
 		}
