@@ -647,7 +647,17 @@ public class LocalController {
 				String message = Messages.getString("LocalController.14");
 				String report = TagErrorsReport.run(workDocument);
 				MessageFormat mf = new MessageFormat(Messages.getString(message));
-				logger.displayError(mf.format(new String[] { report }).replace("!", ""));
+				String formattedMessage = mf.format(new String[] { report }).trim();
+
+				// Remove first '!' if it's the first character
+				if (formattedMessage.startsWith("!")) {
+				    formattedMessage = formattedMessage.substring(1);
+				}
+
+				// Remove last '!' if it's the last non-whitespace character
+				formattedMessage = formattedMessage.replaceFirst("!\\s*$", "");
+
+				logger.displayError(formattedMessage);
 				return;
 			}
 		}
