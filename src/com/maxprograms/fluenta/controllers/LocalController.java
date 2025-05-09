@@ -653,9 +653,11 @@ public class LocalController {
 				if (formattedMessage.startsWith("!")) {
 				    formattedMessage = formattedMessage.substring(1);
 				}
-
-				// Remove last '!' if it's the last non-whitespace character
-				formattedMessage = formattedMessage.replaceFirst("!\\s*$", "");
+				
+				// Remove last '!' if it's the last character
+				if(formattedMessage.endsWith("!")) {
+				  formattedMessage = formattedMessage.substring(0, formattedMessage.length() - 1);
+				}
 
 				logger.displayError(formattedMessage);
 				return;
